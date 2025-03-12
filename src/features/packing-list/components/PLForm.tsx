@@ -52,9 +52,12 @@ export default function PackagingListForm() {
 		e.preventDefault();
 
 		// Here you would typically save the packing list
-		console.log({
-			name: listName,
-			items: items,
+		fetch("/api/packing-list", {
+			method: "POST",
+			body: JSON.stringify({
+				name: listName,
+				items: [items],
+			}),
 		});
 
 		// For demo purposes, alert the user

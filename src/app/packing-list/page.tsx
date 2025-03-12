@@ -1,4 +1,4 @@
-import PackingListForm from "@/components/PLForm";
+import PackingListForm from "@/features/packing-list/components/PLForm";
 
 export default function PackingListPage() {
 	return (
