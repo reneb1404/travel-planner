@@ -1,3 +1,4 @@
+import { Navbar } from "@/components/navbar";
 import { Toaster } from "@/components/ui/sonner";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -26,8 +27,9 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased dark`}
+				className={`${geistSans.variable} ${geistMono.variable} antialiased dark bg-muted`}
 			>
+				<Navbar />
 				{children}
 				<Toaster />
 			</body>
