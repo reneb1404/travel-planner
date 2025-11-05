@@ -13,35 +13,23 @@ import {
 import { Input } from "@/components/ui/input";
 import { LoadingSwap } from "@/components/ui/loading-swap";
 import { PasswordInput } from "@/components/ui/password-input";
-import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
-import * as z from "zod";
+import { signUpUser } from "../dal/auth-actions";
+import { SignUpFormData, signUpSchema } from "../lib/validations";
 
-const signUpSchema = z.object({
-	name: z.string().min(2, "Name must be at least 2 characters long"),
-	email: z.string().email("Invalid email address").min(1, "Email is required"),
-	password: z
-		.string()
-		.min(8, "Password must be at least 8 characters long")
-		.max(64, "Password must be at most 64 characters long"),
-});
-
-type SignUpForm = z.infer<typeof signUpSchema>;
-
-export function SignupForm({
+export function SignUpForm({
 	className,
 	...props
 }: React.ComponentProps<"div">) {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const router = useRouter();
 
-	const signupForm = useForm<SignUpForm>({
+	const signupForm = useForm<SignUpFormData>({
 		resolver: zodResolver(signUpSchema),
 		defaultValues: {
 			name: "",
@@ -50,26 +38,16 @@ export function SignupForm({
 		},
 	});
 
-	async function handleSignUp(data: SignUpForm) {
+	async function handleSignUp(data: SignUpFormData) {
 		setIsSubmitting(true);
-		await authClient.signUp.email(
-			{ ...data, callbackURL: "/" },
-			{
-				onError: (error) => {
-					setIsSubmitting(false);
-					toast.error(
-						error.error.message || "An error occurred during sign up."
-					);
-				},
-				onSuccess: () => {
-					setIsSubmitting(false);
-					toast.success(
-						"Sign up successful! Please check your email to verify your account."
-					);
-					router.push("/");
-				},
-			}
-		);
+		try {
+			await signUpUser(data);
+			router.push("/");
+		} catch (error) {
+			console.error("An unexpected error occurred:", error);
+		} finally {
+			setIsSubmitting(false);
+		}
 	}
 
 	return (

@@ -14,25 +14,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { LoadingSwap } from "@/components/ui/loading-swap";
 import { PasswordInput } from "@/components/ui/password-input";
-import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
-import * as z from "zod";
-
-const loginSchema = z.object({
-	email: z.string().email("Invalid email address").min(1, "Email is required"),
-	password: z
-		.string()
-		.min(8, "Password must be at least 8 characters long")
-		.max(64, "Password must be at most 64 characters long"),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
+import { signInUser } from "../dal/auth-actions";
+import { LoginFormData, loginSchema } from "../lib/validations";
 
 export function LoginForm({
 	className,
@@ -48,25 +37,16 @@ export function LoginForm({
 		},
 	});
 
-	async function handleLogin(data: LoginForm) {
+	async function handleLogin(data: LoginFormData) {
 		setIsSubmitting(true);
-
-		await authClient.signIn.email(
-			{ ...data, callbackURL: "/" },
-			{
-				onError: (error) => {
-					setIsSubmitting(false);
-					toast.error(
-						error.error.message || "An error occurred during sign in."
-					);
-				},
-				onSuccess: () => {
-					setIsSubmitting(false);
-					toast.success("Sign in successful!");
-					router.push("/");
-				},
-			}
-		);
+		try {
+			await signInUser(data);
+			router.push("/");
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setIsSubmitting(false);
+		}
 	}
 
 	return (
