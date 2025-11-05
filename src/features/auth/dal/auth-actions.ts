@@ -55,3 +55,7 @@ export async function signUpUser(data: SignUpFormData) {
 		);
 	});
 }
+
+export async function signOutUser() {
+	await authClient.signOut();
+}

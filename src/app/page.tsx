@@ -1,20 +1,15 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
-import { authClient } from "@/lib/auth-client";
+import SignOutButton from "@/features/auth/components/logout-button";
+import { getCurrentUser } from "@/features/auth/dal/queries";
 import Link from "next/link";
 
-export default function Home() {
-	const { data: session, isPending: loading } = authClient.useSession();
-
-	if (loading) {
-		return <div>Loading...</div>;
-	}
+export default async function Home() {
+	const user = await getCurrentUser();
 
 	return (
 		<div className="my-6 px-4 max-w-md mx-auto">
 			<div className="text-center space-y-6">
-				{session == null ? (
+				{user == null ? (
 					<>
 						<h1 className="text-3xl font-bold">Welcome to Our App</h1>
 						<Button asChild size="lg">
@@ -23,14 +18,9 @@ export default function Home() {
 					</>
 				) : (
 					<>
-						<h1 className="text-3xl font-bold">Welcome {session.user.name}!</h1>
+						<h1 className="text-3xl font-bold">Welcome {user.name}!</h1>
 						<div className="flex gap-4 justify-center">
-							<Button
-								variant={"destructive"}
-								onClick={async () => await authClient.signOut()}
-							>
-								Logout
-							</Button>
+							<SignOutButton />
 						</div>
 					</>
 				)}
