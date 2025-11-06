@@ -26,7 +26,7 @@ export function TripCard({ trip }: { trip: Trip }) {
 		setError(null);
 
 		const data = {
-			name: formData.get("title") as string,
+			name: formData.get("name") as string,
 			description: (formData.get("description") as string) || null,
 		};
 

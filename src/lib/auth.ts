@@ -16,6 +16,6 @@ export const auth = betterAuth({
 			maxAge: 60,
 		},
 	},
-	trustedOrigins: ["http://localhost:3000"],
+	trustedOrigins: ["http://192.168.178.177:3000"],
 	plugins: [nextCookies()],
 });

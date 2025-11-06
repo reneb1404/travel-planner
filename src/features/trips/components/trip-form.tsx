@@ -14,7 +14,6 @@ export function CreateTripForm() {
 		setError(null);
 
 		const data = {
-			id: randomUUID(),
 			name: formData.get("name") as string,
 			startDate: formData.get("startDate") as string,
 			endDate: formData.get("endDate") as string,

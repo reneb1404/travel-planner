@@ -1,6 +1,6 @@
 {
-  "id": "696a0d44-1235-422d-9b67-6070ed268f25",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "c6d21db7-42f2-420f-b0fb-9d4cfa8b604c",
+  "prevId": "696a0d44-1235-422d-9b67-6070ed268f25",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -380,7 +380,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "stop_id_idx": {
+          "name": "stop_id_idx",
+          "columns": [
+            {
+              "expression": "stop_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "activity_stop_id_stop_id_fk": {
           "name": "activity_stop_id_stop_id_fk",
@@ -464,7 +480,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "trip_id_idx": {
+          "name": "trip_id_idx",
+          "columns": [
+            {
+              "expression": "trip_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "stop_trip_id_trip_id_fk": {
           "name": "stop_trip_id_trip_id_fk",

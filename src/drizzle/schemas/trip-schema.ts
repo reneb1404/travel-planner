@@ -1,18 +1,22 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
 	boolean,
 	date,
+	index,
 	integer,
 	pgTable,
 	text,
 	time,
 	timestamp,
+	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
 
 export const trip = pgTable("trip", {
-	id: text("id").primaryKey(),
+	id: uuid("id")
+		.primaryKey()
+		.default(sql`gen_random_uuid()`),
 	userId: text("user_id")
 		.notNull()
 		.references(() => user.id, { onDelete: "cascade" }),
@@ -24,32 +28,42 @@ export const trip = pgTable("trip", {
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const stop = pgTable("stop", {
-	id: text("id").primaryKey(),
-	trip_id: text("id"),
-	name: varchar("name", { length: 255 }).notNull(),
-	startDate: date("start_date"),
-	endDate: date("end_date"),
-	orderIndex: integer("order_index").notNull(),
-	notes: text("notes"),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+export const stop = pgTable(
+	"stop",
+	{
+		id: uuid("id")
+			.primaryKey()
+			.default(sql`gen_random_uuid()`),
+		tripId: uuid("trip_id").references(() => trip.id, { onDelete: "cascade" }),
+		name: varchar("name", { length: 255 }).notNull(),
+		startDate: date("start_date"),
+		endDate: date("end_date"),
+		orderIndex: integer("order_index").notNull(),
+		notes: text("notes"),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+		updatedAt: timestamp("updated_at").defaultNow().notNull(),
+	},
+	(table) => [index("trip_id_idx").on(table.tripId)]
+);
 
-export const activity = pgTable("activity", {
-	id: text("id").primaryKey(),
-	stopId: text("stop_id")
-		.notNull()
-		.references(() => stop.id, { onDelete: "cascade" }),
-	name: varchar("name", { length: 255 }).notNull(),
-	scheduledDate: date("scheduled_date"),
-	scheduledTime: time("scheduled_time"),
-	durationMinutes: integer("duration_minutes"),
-	notes: text("notes"),
-	isCompleted: boolean("is_completed").default(false).notNull(),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+export const activity = pgTable(
+	"activity",
+	{
+		id: uuid("id")
+			.primaryKey()
+			.default(sql`gen_random_uuid()`),
+		stopId: uuid("stop_id").references(() => stop.id, { onDelete: "cascade" }),
+		name: varchar("name", { length: 255 }).notNull(),
+		scheduledDate: date("scheduled_date"),
+		scheduledTime: time("scheduled_time"),
+		durationMinutes: integer("duration_minutes"),
+		notes: text("notes"),
+		isCompleted: boolean("is_completed").default(false).notNull(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+		updatedAt: timestamp("updated_at").defaultNow().notNull(),
+	},
+	(table) => [index("stop_id_idx").on(table.stopId)]
+);
 
 /* Relations */
 
@@ -67,7 +81,7 @@ export const tripRelation = relations(trip, ({ one, many }) => ({
 
 export const stopRelation = relations(stop, ({ one, many }) => ({
 	trip: one(trip, {
-		fields: [stop.trip_id],
+		fields: [stop.tripId],
 		references: [trip.id],
 	}),
 	activities: many(activity),
