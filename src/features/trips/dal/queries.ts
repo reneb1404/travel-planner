@@ -1,7 +1,15 @@
 "use server";
 
 import { db } from "@/drizzle/db";
-import { NewTrip, Trip, trip } from "@/drizzle/schemas/trip-schema";
+import {
+	activity,
+	NewStop,
+	NewTrip,
+	stop,
+	Stop,
+	Trip,
+	trip,
+} from "@/drizzle/schemas/trip-schema";
 import { requireAuth } from "@/features/auth/dal/queries";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -47,7 +55,6 @@ export async function getTrip(tripId: string): Promise<ActionResult<Trip>> {
 				},
 			},
 		});
-
 		if (!tripData) {
 			return { success: false, error: "Trip not found" };
 		}
@@ -136,5 +143,23 @@ export async function deleteTrip(tripId: string): Promise<ActionResult<void>> {
 	} catch (error) {
 		console.error("Failed to delete trip", error);
 		return { success: false, error: "Failed to delete trip" };
+	}
+}
+
+export async function addNewStop(data: NewStop): Promise<ActionResult<Stop>> {
+	try {
+		const [newStop] = await db
+			.insert(stop)
+			.values({ ...data })
+			.returning();
+
+		if (!newStop) {
+			return { success: false, error: "Failed to add stop" };
+		}
+		revalidatePath("/trips/[id]/");
+		return { success: true, data: newStop };
+	} catch (error) {
+		console.error("Error adding stop: ", error);
+		return { success: false, error: "Error adding stop" };
 	}
 }

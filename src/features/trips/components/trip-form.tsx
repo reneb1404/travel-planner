@@ -1,111 +1,151 @@
 "use client";
 
-import { randomUUID } from "crypto";
+import { Button } from "@/components/ui/button";
+import {
+	Field,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { LoadingSwap } from "@/components/ui/loading-swap";
+import { Textarea } from "@/components/ui/textarea";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { addNewTrip } from "../dal/queries";
+import { TripFormData, tripSchema } from "../lib/validations";
 
 export function CreateTripForm() {
 	const router = useRouter();
-	const [isPending, startTransition] = useTransition();
-	const [error, setError] = useState<string | null>(null);
+	const [isCreating, setIsCreating] = useState(false);
+	const today = new Date();
+	const tomorrow = new Date(today);
+	tomorrow.setDate(today.getDate() + 1);
 
-	async function handleSubmit(formData: FormData) {
-		setError(null);
+	const tripForm = useForm({
+		resolver: zodResolver(tripSchema),
+		defaultValues: {
+			name: "",
+			startDate: today,
+			endDate: tomorrow,
+			notes: "",
+		},
+	});
 
-		const data = {
-			name: formData.get("name") as string,
-			startDate: formData.get("startDate") as string,
-			endDate: formData.get("endDate") as string,
-			description: (formData.get("description") as string) || null,
-		};
-
-		startTransition(async () => {
-			const result = await addNewTrip(data);
+	async function createNewTrip(data: TripFormData) {
+		try {
+			setIsCreating(true);
+			const result = await addNewTrip({
+				name: data.name,
+				startDate: data.startDate?.toISOString(),
+				endDate: data.endDate?.toISOString(),
+				notes: data.notes,
+			});
 
 			if (result.success) {
+				tripForm.reset();
 				router.push("/trips");
 				router.refresh();
-			} else {
-				setError(result.error);
 			}
-		});
+		} finally {
+			setIsCreating(false);
+		}
 	}
 
 	return (
-		<form action={handleSubmit} className="space-y-4">
-			<div>
-				<label htmlFor="name" className="block text-sm font-medium mb-1">
-					Trip Name
-				</label>
-				<input
-					type="text"
-					id="name"
+		<form onSubmit={tripForm.handleSubmit(createNewTrip)}>
+			<FieldGroup>
+				<Controller
 					name="name"
-					required
-					disabled={isPending}
-					className="w-full px-3 py-2 border rounded-md"
-					placeholder="Road trip to Italy"
+					control={tripForm.control}
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+							<FieldLabel htmlFor="name">Trip Name</FieldLabel>
+							<Input
+								id="name"
+								{...field}
+								aria-invalid={fieldState.invalid}
+								required
+							/>
+							{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+						</Field>
+					)}
 				/>
-			</div>
 
-			<div className="grid grid-cols-2 gap-4">
-				<div>
-					<label htmlFor="startDate" className="block text-sm font-medium mb-1">
-						Start Date
-					</label>
-					<input
-						type="date"
-						id="startDate"
-						name="startDate"
-						required
-						disabled={isPending}
-						className="w-full px-3 py-2 border rounded-md"
-					/>
-				</div>
-
-				<div>
-					<label htmlFor="endDate" className="block text-sm font-medium mb-1">
-						End Date
-					</label>
-					<input
-						type="date"
-						id="endDate"
-						name="endDate"
-						required
-						disabled={isPending}
-						className="w-full px-3 py-2 border rounded-md"
-					/>
-				</div>
-			</div>
-
-			<div>
-				<label htmlFor="description" className="block text-sm font-medium mb-1">
-					Description (optional)
-				</label>
-				<textarea
-					id="description"
-					name="description"
-					disabled={isPending}
-					rows={3}
-					className="w-full px-3 py-2 border rounded-md"
-					placeholder="Tell us about your trip..."
+				<Controller
+					name="startDate"
+					control={tripForm.control}
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+							<FieldLabel htmlFor="startDate">Start Date</FieldLabel>
+							<Input
+								id="startDate"
+								value={
+									field.value ? field.value.toISOString().split("T")[0] : ""
+								}
+								onChange={(e) => {
+									const value = e.target.value;
+									field.onChange(value ? new Date(value) : null);
+								}}
+								type="date"
+								aria-invalid={fieldState.invalid}
+								required
+							/>
+							{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+						</Field>
+					)}
 				/>
-			</div>
 
-			{error && (
-				<div className="p-3 bg-red-50 text-red-600 rounded-md text-sm">
-					{error}
-				</div>
-			)}
+				<Controller
+					name="endDate"
+					control={tripForm.control}
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+							<FieldLabel htmlFor="endDate">End Date</FieldLabel>
+							<Input
+								id="endDate"
+								value={
+									field.value ? field.value.toISOString().split("T")[0] : ""
+								}
+								onChange={(e) => {
+									const value = e.target.value;
+									field.onChange(value ? new Date(value) : null);
+								}}
+								type="date"
+								aria-invalid={fieldState.invalid}
+								required
+							/>
+							{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+						</Field>
+					)}
+				/>
 
-			<button
-				type="submit"
-				disabled={isPending}
-				className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-			>
-				{isPending ? "Creating..." : "Create Trip"}
-			</button>
+				<Controller
+					name="notes"
+					control={tripForm.control}
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+							<FieldLabel htmlFor="notes">Notes</FieldLabel>
+							<Textarea
+								id="notes"
+								{...field}
+								aria-invalid={fieldState.invalid}
+								required
+							/>
+							{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+						</Field>
+					)}
+				/>
+				<Field>
+					<Button type="submit">
+						<LoadingSwap isLoading={isCreating}>
+							<span className="flex items-center gap-2">Create Trip</span>
+						</LoadingSwap>
+					</Button>
+				</Field>
+			</FieldGroup>
 		</form>
 	);
 }
