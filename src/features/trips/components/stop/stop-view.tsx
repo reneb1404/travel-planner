@@ -1,12 +1,13 @@
-import { Button } from "@/components/ui/button";
-import { Activity, Stop } from "@/drizzle/schema";
-import { Pencil, Trash2 } from "lucide-react";
+import { Stop } from "@/drizzle/schema";
+import StopDeleteButton from "./stop-delete-button";
+import StopEditButton from "./stop-edit-button";
 
 interface StopViewProps {
-	stop: Stop & { activities?: Activity[] };
+	tripId: string;
+	stop: Stop;
 }
 
-export default function StopView({ stop }: StopViewProps) {
+export default function StopView({ tripId, stop }: StopViewProps) {
 	function formatDate(date: string | null) {
 		if (!date) return null;
 		return new Date(date).toLocaleDateString("en-US", {
@@ -28,12 +29,8 @@ export default function StopView({ stop }: StopViewProps) {
 					)}
 				</div>
 				<div className="flex gap-2">
-					<Button variant="ghost" size="sm">
-						<Pencil className="w-4 h-4" />
-					</Button>
-					<Button variant="ghost" size="sm">
-						<Trash2 className="w-4 h-4" />
-					</Button>
+					<StopEditButton tripId={tripId} stop={stop} />
+					<StopDeleteButton tripId={tripId} stopId={stop.id} />
 				</div>
 			</div>
 

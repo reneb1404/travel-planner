@@ -122,7 +122,7 @@ export function TripDetailView({ trip }: TripDetailViewProps) {
 
 					{trip.stops.map((stop) => (
 						<div key={stop.id} className="bg-white rounded-lg shadow p-6">
-							<StopView stop={stop} />
+							<StopView tripId={trip.id} stop={stop} />
 
 							{/* Activities */}
 							{stop.activities && stop.activities.length > 0 ? (

@@ -21,6 +21,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { updateTrip } from "../dal/queries";
 import { TripFormData, tripSchema } from "../lib/validations";
 
@@ -58,10 +59,12 @@ export function EditTripDialog({
 				notes: data.notes,
 			});
 
-			if (result.success) {
-				onOpenChange(false);
-				router.refresh();
+			if (!result.success) {
+				toast.error(result.error);
 			}
+			toast.success("Trip updated");
+			onOpenChange(false);
+			router.refresh();
 		} finally {
 			setIsEditing(false);
 		}

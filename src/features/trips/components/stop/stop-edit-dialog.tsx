@@ -15,58 +15,61 @@ import {
 import { Input } from "@/components/ui/input";
 import { LoadingSwap } from "@/components/ui/loading-swap";
 import { Textarea } from "@/components/ui/textarea";
+import { Stop } from "@/drizzle/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { addNewStop } from "../../dal/queries";
+import { toast } from "sonner";
+import { updateStop } from "../../dal/queries";
 import { StopFormData, stopSchema } from "../../lib/validations";
 
-interface AddStopDialogProps {
+interface UpdateStopDialogProps {
+	stop: Stop;
 	tripId: string;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }
 
-export default function AddStopDialog({
+export default function StopEditDialog({
+	stop,
 	tripId,
 	open,
 	onOpenChange,
-}: AddStopDialogProps) {
-	const [isAddingStop, setIsAddingStop] = useState(false);
+}: UpdateStopDialogProps) {
+	const [isUpdatingStop, setIsUpdatingStop] = useState(false);
 	const router = useRouter();
-	const today = new Date();
-
-	const addStopForm = useForm({
+	const updateStopForm = useForm({
 		resolver: zodResolver(stopSchema),
 		defaultValues: {
-			name: "",
-			startDate: today,
-			endDate: today,
-			orderIndex: 1,
-			notes: "",
+			name: stop.name,
+			startDate: stop.startDate ? new Date(stop.startDate) : new Date(),
+			endDate: stop.endDate ? new Date(stop.endDate) : new Date(),
+			orderIndex: stop.orderIndex,
+			notes: stop.notes ? stop.notes : "",
 		},
 	});
 
-	async function handleAddNewStop(data: StopFormData) {
+	async function handleUpdateStop(data: StopFormData) {
 		try {
-			setIsAddingStop(true);
-			const result = await addNewStop({
+			setIsUpdatingStop(true);
+			const result = await updateStop(stop.id, tripId, {
 				name: data.name,
 				startDate: data.startDate.toISOString(),
 				endDate: data.endDate.toISOString(),
 				orderIndex: data.orderIndex,
 				notes: data.notes,
-				tripId: tripId,
 			});
 
-			if (result.success) {
-				onOpenChange(false);
-				addStopForm.reset();
-				router.refresh();
+			if (!result.success) {
+				toast.error(result.error);
 			}
+
+			onOpenChange(false);
+			router.refresh();
+			toast.success("Stop updated");
 		} finally {
-			setIsAddingStop(false);
+			setIsUpdatingStop(false);
 		}
 	}
 
@@ -77,11 +80,11 @@ export default function AddStopDialog({
 					<DialogTitle>Add Trip Stop</DialogTitle>
 				</DialogHeader>
 
-				<form onSubmit={addStopForm.handleSubmit(handleAddNewStop)}>
+				<form onSubmit={updateStopForm.handleSubmit(handleUpdateStop)}>
 					<FieldGroup>
 						<Controller
 							name="name"
-							control={addStopForm.control}
+							control={updateStopForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
 									<FieldLabel htmlFor="name">Stop Name</FieldLabel>
@@ -99,7 +102,7 @@ export default function AddStopDialog({
 						/>
 						<Controller
 							name="startDate"
-							control={addStopForm.control}
+							control={updateStopForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
 									<FieldLabel htmlFor="startDate">Start Date</FieldLabel>
@@ -124,7 +127,7 @@ export default function AddStopDialog({
 						/>
 						<Controller
 							name="endDate"
-							control={addStopForm.control}
+							control={updateStopForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
 									<FieldLabel htmlFor="endDate">End Date</FieldLabel>
@@ -149,7 +152,7 @@ export default function AddStopDialog({
 						/>
 						<Controller
 							name="orderIndex"
-							control={addStopForm.control}
+							control={updateStopForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
 									<FieldLabel htmlFor="orderIndex">Order</FieldLabel>
@@ -170,7 +173,7 @@ export default function AddStopDialog({
 						/>
 						<Controller
 							name="notes"
-							control={addStopForm.control}
+							control={updateStopForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
 									<FieldLabel htmlFor="notes">Notes</FieldLabel>
@@ -187,8 +190,10 @@ export default function AddStopDialog({
 						/>
 						<Field>
 							<Button type="submit">
-								<LoadingSwap isLoading={isAddingStop}>
-									<span className="flex items-center gap-2">Add Trip Stop</span>
+								<LoadingSwap isLoading={isUpdatingStop}>
+									<span className="flex items-center gap-2">
+										Update Trip Stop
+									</span>
 								</LoadingSwap>
 							</Button>
 						</Field>

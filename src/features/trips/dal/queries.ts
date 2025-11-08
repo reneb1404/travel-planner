@@ -11,7 +11,7 @@ import {
 	trip,
 } from "@/drizzle/schemas/trip-schema";
 import { requireAuth } from "@/features/auth/dal/queries";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 type ActionResult<T> =
@@ -141,10 +141,12 @@ export async function deleteTrip(tripId: string): Promise<ActionResult<void>> {
 		revalidatePath("/trips");
 		return { success: true, data: undefined };
 	} catch (error) {
-		console.error("Failed to delete trip", error);
+		console.error("Failed to delete trip: ", error);
 		return { success: false, error: "Failed to delete trip" };
 	}
 }
+
+/* Trip Stop Queries */
 
 export async function addNewStop(data: NewStop): Promise<ActionResult<Stop>> {
 	try {
@@ -161,5 +163,59 @@ export async function addNewStop(data: NewStop): Promise<ActionResult<Stop>> {
 	} catch (error) {
 		console.error("Error adding stop: ", error);
 		return { success: false, error: "Error adding stop" };
+	}
+}
+
+export async function deleteStop(
+	tripId: string,
+	stopId: string
+): Promise<ActionResult<void>> {
+	try {
+		const existingStop = await db.query.stop.findFirst({
+			where: (stop, { eq, and }) =>
+				and(eq(stop.id, stopId), eq(stop.tripId, tripId)),
+		});
+
+		if (!existingStop) {
+			return { success: false, error: "Stop not found" };
+		}
+		await db.delete(stop).where(eq(stop.id, stopId));
+
+		revalidatePath("/trips/[id]");
+		return { success: true, data: undefined };
+	} catch (error) {
+		console.error("Failed to delete stop: ", error);
+		return { success: false, error: "Failed to delete stop" };
+	}
+}
+
+export async function updateStop(
+	stopId: string,
+	tripId: string,
+	data: Partial<Omit<NewStop, "tripId" | "id">>
+): Promise<ActionResult<Stop>> {
+	try {
+		const existingStop = await db.query.stop.findFirst({
+			where: (stop, { eq, and }) =>
+				and(eq(stop.id, stopId), eq(stop.tripId, tripId)),
+		});
+
+		if (!existingStop) {
+			return { success: false, error: "Stop not found" };
+		}
+
+		const [updatedStop] = await db
+			.update(stop)
+			.set({ ...data, updatedAt: new Date() })
+			.where(and(eq(stop.id, stopId), eq(stop.tripId, tripId)))
+			.returning();
+
+		if (!updatedStop) {
+			return { success: false, error: "Could not update stop" };
+		}
+		return { success: true, data: updatedStop };
+	} catch (error) {
+		console.error("Failed to update stop: ", error);
+		return { success: false, error: "Failed to update stop" };
 	}
 }
