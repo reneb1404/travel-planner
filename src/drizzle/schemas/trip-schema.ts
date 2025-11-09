@@ -52,7 +52,9 @@ export const activity = pgTable(
 		id: uuid("id")
 			.primaryKey()
 			.default(sql`gen_random_uuid()`),
-		stopId: uuid("stop_id").references(() => stop.id, { onDelete: "cascade" }),
+		stopId: uuid("stop_id")
+			.notNull()
+			.references(() => stop.id, { onDelete: "cascade" }),
 		name: varchar("name", { length: 255 }).notNull(),
 		scheduledDate: date("scheduled_date"),
 		scheduledTime: time("scheduled_time"),

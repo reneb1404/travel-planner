@@ -3,14 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Stop, trip } from "@/drizzle/schema";
 import { Pencil } from "lucide-react";
 import { useState } from "react";
-import StopEditDialog from "./stop-edit-dialog";
+import StopEditDialog from "./edit-stop-dialog";
 
 interface StopEditProps {
 	tripId: string;
 	stop: Stop;
 }
 
-export default function StopEditButton({ tripId, stop }: StopEditProps) {
+export default function EditStopButton({ tripId, stop }: StopEditProps) {
 	const [isEditing, setIsEditing] = useState(false);
 
 	return (

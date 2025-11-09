@@ -8,7 +8,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { deleteTrip } from "../dal/queries";
 import AddStopDialog from "./stop/add-stop-dialog";
-import StopView from "./stop/stop-view";
+import StopViewForm from "./stop/view-stop-form";
 import { EditTripDialog } from "./trip-edit-dialog";
 
 interface TripDetailViewProps {
@@ -32,6 +32,7 @@ export function TripDetailView({ trip }: TripDetailViewProps) {
 			if (!res.success) {
 				toast.error(res.error);
 			}
+			router.push("/trips");
 			toast.success("Trip deleted");
 		} finally {
 			setIsDeleting(false);
@@ -122,75 +123,7 @@ export function TripDetailView({ trip }: TripDetailViewProps) {
 
 					{trip.stops.map((stop) => (
 						<div key={stop.id} className="bg-white rounded-lg shadow p-6">
-							<StopView tripId={trip.id} stop={stop} />
-
-							{/* Activities */}
-							{stop.activities && stop.activities.length > 0 ? (
-								<div className="mt-4">
-									<h4 className="font-medium mb-3 flex justify-between items-center">
-										<span>Activities</span>
-										<Button variant="ghost" size="sm">
-											Add Activity
-										</Button>
-									</h4>
-									<ul className="space-y-2">
-										{stop.activities.map((activity) => (
-											<li
-												key={activity.id}
-												className={`flex justify-between items-start pl-4 py-2 border-l-2 ${
-													activity.isCompleted
-														? "border-green-400 bg-green-50"
-														: "border-blue-300"
-												} hover:bg-gray-50 rounded`}
-											>
-												<div className="flex-1">
-													<div
-														className={`font-medium ${
-															activity.isCompleted
-																? "line-through text-gray-500"
-																: ""
-														}`}
-													>
-														{activity.name}
-													</div>
-													{activity.notes && (
-														<div className="text-sm text-gray-600">
-															{activity.notes}
-														</div>
-													)}
-													<div className="text-xs text-gray-500 mt-1 space-x-3">
-														{activity.scheduledDate && (
-															<span>
-																📅 {formatDate(activity.scheduledDate)}
-															</span>
-														)}
-														{activity.scheduledTime && (
-															<span>
-																🕐 {formatTime(activity.scheduledTime)}
-															</span>
-														)}
-														{activity.durationMinutes && (
-															<span>⏱️ {activity.durationMinutes} min</span>
-														)}
-													</div>
-												</div>
-												<div className="flex gap-1">
-													<Button variant="ghost" size="sm">
-														<Pencil className="w-3 h-3" />
-													</Button>
-													<Button variant="ghost" size="sm">
-														<Trash2 className="w-3 h-3" />
-													</Button>
-												</div>
-											</li>
-										))}
-									</ul>
-								</div>
-							) : (
-								<p className="text-gray-500 text-sm italic mt-4">
-									No activities added yet
-								</p>
-							)}
+							<StopViewForm tripId={trip.id} stop={stop} />
 						</div>
 					))}
 				</div>

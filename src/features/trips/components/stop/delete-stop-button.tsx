@@ -12,7 +12,7 @@ interface StopViewProps {
 	stopId: string;
 }
 
-export default function StopDeleteButton({ tripId, stopId }: StopViewProps) {
+export default function DeleteStopButton({ tripId, stopId }: StopViewProps) {
 	const [isDeleting, setIsDeleting] = useState(false);
 
 	async function handleStopDelete() {
@@ -31,7 +31,6 @@ export default function StopDeleteButton({ tripId, stopId }: StopViewProps) {
 			setIsDeleting(false);
 		}
 	}
-
 	return (
 		<Button onClick={handleStopDelete} variant="ghost" size="sm">
 			<LoadingSwap isLoading={isDeleting}>

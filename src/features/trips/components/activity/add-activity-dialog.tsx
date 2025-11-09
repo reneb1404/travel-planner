@@ -1,8 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
@@ -16,58 +18,61 @@ import { Input } from "@/components/ui/input";
 import { LoadingSwap } from "@/components/ui/loading-swap";
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DialogDescription } from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { addNewStop } from "../../dal/queries";
-import { StopFormData, stopSchema } from "../../lib/validations";
+import { createNewActivity } from "../../dal/queries";
+import { ActivityFormData, activitySchema } from "../../lib/validations";
 
-interface AddStopDialogProps {
-	tripId: string;
+interface AddActivityDialogProps {
+	stopId: string;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }
 
-export default function AddStopDialog({
-	tripId,
+export default function AddActivityDialog({
+	stopId,
 	open,
 	onOpenChange,
-}: AddStopDialogProps) {
-	const [isAddingStop, setIsAddingStop] = useState(false);
+}: AddActivityDialogProps) {
+	const [isAddingActivity, setIsAddingActivity] = useState(false);
 	const router = useRouter();
 	const today = new Date();
 
-	const addStopForm = useForm({
-		resolver: zodResolver(stopSchema),
+	const addActivityForm = useForm({
+		resolver: zodResolver(activitySchema),
 		defaultValues: {
 			name: "",
-			startDate: today,
-			endDate: today,
-			orderIndex: 1,
+			scheduledDate: today,
+			scheduledTime: "00:00",
+			durationMinutes: 0,
 			notes: "",
+			isCompleted: false,
 		},
 	});
 
-	async function handleAddNewStop(data: StopFormData) {
+	async function handleAddNewStop(data: ActivityFormData) {
 		try {
-			setIsAddingStop(true);
-			const result = await addNewStop({
+			setIsAddingActivity(true);
+			const result = await createNewActivity({
 				name: data.name,
-				startDate: data.startDate.toISOString(),
-				endDate: data.endDate.toISOString(),
-				orderIndex: data.orderIndex,
+				scheduledDate: data.scheduledDate
+					? data.scheduledDate.toISOString()
+					: null,
+				scheduledTime: data.scheduledTime,
+				durationMinutes: data.durationMinutes,
+				stopId: stopId,
+				isCompleted: data.isCompleted,
 				notes: data.notes,
-				tripId: tripId,
 			});
 
 			if (result.success) {
 				onOpenChange(false);
-				addStopForm.reset();
+				addActivityForm.reset();
 				router.refresh();
 			}
 		} finally {
-			setIsAddingStop(false);
+			setIsAddingActivity(false);
 		}
 	}
 
@@ -75,17 +80,18 @@ export default function AddStopDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-md">
 				<DialogHeader>
-					<DialogTitle>Add Trip Stop</DialogTitle>
+					<DialogTitle>Add Activity</DialogTitle>
 				</DialogHeader>
-				<DialogDescription></DialogDescription>
-				<form onSubmit={addStopForm.handleSubmit(handleAddNewStop)}>
+				<DialogDescription />
+
+				<form onSubmit={addActivityForm.handleSubmit(handleAddNewStop)}>
 					<FieldGroup>
 						<Controller
 							name="name"
-							control={addStopForm.control}
+							control={addActivityForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
-									<FieldLabel htmlFor="name">Stop Name</FieldLabel>
+									<FieldLabel htmlFor="name">Activity Name</FieldLabel>
 									<Input
 										{...field}
 										id="name"
@@ -99,13 +105,15 @@ export default function AddStopDialog({
 							)}
 						/>
 						<Controller
-							name="startDate"
-							control={addStopForm.control}
+							name="scheduledDate"
+							control={addActivityForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
-									<FieldLabel htmlFor="startDate">Start Date</FieldLabel>
+									<FieldLabel htmlFor="scheduledDate">
+										Scheduled Date
+									</FieldLabel>
 									<Input
-										id="startDate"
+										id="scheduledDate"
 										type="date"
 										value={
 											field.value ? field.value.toISOString().split("T")[0] : ""
@@ -124,21 +132,17 @@ export default function AddStopDialog({
 							)}
 						/>
 						<Controller
-							name="endDate"
-							control={addStopForm.control}
+							name="scheduledTime"
+							control={addActivityForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
-									<FieldLabel htmlFor="endDate">End Date</FieldLabel>
+									<FieldLabel htmlFor="scheduledTime">
+										Scheduled Time
+									</FieldLabel>
 									<Input
-										id="endDate"
-										type="date"
-										value={
-											field.value ? field.value.toISOString().split("T")[0] : ""
-										}
-										onChange={(e) => {
-											const value = e.target.value;
-											field.onChange(value ? new Date(value) : null);
-										}}
+										id="scheduledTime"
+										type="time"
+										{...field}
 										aria-invalid={fieldState.invalid}
 										required
 									/>
@@ -149,14 +153,16 @@ export default function AddStopDialog({
 							)}
 						/>
 						<Controller
-							name="orderIndex"
-							control={addStopForm.control}
+							name="durationMinutes"
+							control={addActivityForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
-									<FieldLabel htmlFor="orderIndex">Order</FieldLabel>
+									<FieldLabel htmlFor="durationMinutes">
+										Duration (minutes)
+									</FieldLabel>
 									<Input
 										{...field}
-										id="orderIndex"
+										id="durationMinutes"
 										type="number"
 										value={field.value}
 										onChange={(e) => field.onChange(Number(e.target.value))}
@@ -171,7 +177,7 @@ export default function AddStopDialog({
 						/>
 						<Controller
 							name="notes"
-							control={addStopForm.control}
+							control={addActivityForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
 									<FieldLabel htmlFor="notes">Notes</FieldLabel>
@@ -186,10 +192,34 @@ export default function AddStopDialog({
 								</Field>
 							)}
 						/>
+
+						<Controller
+							name="isCompleted"
+							control={addActivityForm.control}
+							render={({ field, fieldState }) => (
+								<Field aria-invalid={fieldState.invalid}>
+									<div className="flex items-center gap-3">
+										<FieldLabel htmlFor="isCompleted">Completed</FieldLabel>
+										<Checkbox
+											id="isCompleted"
+											className=""
+											checked={field.value}
+											onCheckedChange={(checked) => field.onChange(checked)}
+											aria-invalid={fieldState.invalid}
+										/>
+									</div>
+									{fieldState.invalid && (
+										<FieldError errors={[fieldState.error]} />
+									)}
+								</Field>
+							)}
+						/>
 						<Field>
 							<Button type="submit">
-								<LoadingSwap isLoading={isAddingStop}>
-									<span className="flex items-center gap-2">Add Trip Stop</span>
+								<LoadingSwap isLoading={isAddingActivity}>
+									<span className="flex items-center gap-2">
+										Add Stop Activity
+									</span>
 								</LoadingSwap>
 							</Button>
 						</Field>

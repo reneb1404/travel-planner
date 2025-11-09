@@ -1,8 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
@@ -15,61 +17,68 @@ import {
 import { Input } from "@/components/ui/input";
 import { LoadingSwap } from "@/components/ui/loading-swap";
 import { Textarea } from "@/components/ui/textarea";
-import { Stop } from "@/drizzle/schema";
+import { Activity } from "@/drizzle/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { updateStop } from "../../dal/queries";
-import { StopFormData, stopSchema } from "../../lib/validations";
+import { updateActivity } from "../../dal/queries";
+import { ActivityFormData, activitySchema } from "../../lib/validations";
 
-interface UpdateStopDialogProps {
-	stop: Stop;
-	tripId: string;
+interface EditActivityDialogProps {
+	activity: Activity;
+	stopId: string;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }
 
-export default function StopEditDialog({
-	stop,
-	tripId,
+export default function EditActivityDialog({
+	activity,
+	stopId,
 	open,
 	onOpenChange,
-}: UpdateStopDialogProps) {
-	const [isUpdatingStop, setIsUpdatingStop] = useState(false);
+}: EditActivityDialogProps) {
+	const [isUpdatingActivity, setIsUpdatingActivity] = useState(false);
 	const router = useRouter();
-	const updateStopForm = useForm({
-		resolver: zodResolver(stopSchema),
+
+	const updateActivityForm = useForm({
+		resolver: zodResolver(activitySchema),
 		defaultValues: {
-			name: stop.name,
-			startDate: stop.startDate ? new Date(stop.startDate) : new Date(),
-			endDate: stop.endDate ? new Date(stop.endDate) : new Date(),
-			orderIndex: stop.orderIndex,
-			notes: stop.notes ? stop.notes : "",
+			name: activity.name,
+			scheduledDate: activity.scheduledDate
+				? new Date(activity.scheduledDate)
+				: null,
+			scheduledTime: activity.scheduledTime ? activity.scheduledTime : "00:00",
+			durationMinutes: activity.durationMinutes ? activity.durationMinutes : 0,
+			notes: activity.notes ? activity.notes : "",
+			isCompleted: activity.isCompleted,
 		},
 	});
 
-	async function handleUpdateStop(data: StopFormData) {
+	async function handleUpdateActivity(data: ActivityFormData) {
 		try {
-			setIsUpdatingStop(true);
-			const result = await updateStop(stop.id, tripId, {
+			setIsUpdatingActivity(true);
+			const result = await updateActivity(stopId, activity.id, {
 				name: data.name,
-				startDate: data.startDate.toISOString(),
-				endDate: data.endDate.toISOString(),
-				orderIndex: data.orderIndex,
-				notes: data.notes,
+				scheduledDate: data.scheduledDate
+					? data.scheduledDate.toISOString()
+					: null,
+				scheduledTime: data.scheduledTime || null,
+				durationMinutes: data.durationMinutes || 0,
+				isCompleted: data.isCompleted,
+				notes: data.notes || "",
 			});
 
 			if (!result.success) {
 				toast.error(result.error);
 			}
 
-			onOpenChange(false);
 			router.refresh();
-			toast.success("Stop updated");
+			toast.success("Activity updated");
+			onOpenChange(false);
 		} finally {
-			setIsUpdatingStop(false);
+			setIsUpdatingActivity(false);
 		}
 	}
 
@@ -77,17 +86,18 @@ export default function StopEditDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-md">
 				<DialogHeader>
-					<DialogTitle>Add Trip Stop</DialogTitle>
+					<DialogTitle>Add Activity</DialogTitle>
 				</DialogHeader>
+				<DialogDescription></DialogDescription>
 
-				<form onSubmit={updateStopForm.handleSubmit(handleUpdateStop)}>
+				<form onSubmit={updateActivityForm.handleSubmit(handleUpdateActivity)}>
 					<FieldGroup>
 						<Controller
 							name="name"
-							control={updateStopForm.control}
+							control={updateActivityForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
-									<FieldLabel htmlFor="name">Stop Name</FieldLabel>
+									<FieldLabel htmlFor="name">Activity Name</FieldLabel>
 									<Input
 										{...field}
 										id="name"
@@ -101,13 +111,15 @@ export default function StopEditDialog({
 							)}
 						/>
 						<Controller
-							name="startDate"
-							control={updateStopForm.control}
+							name="scheduledDate"
+							control={updateActivityForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
-									<FieldLabel htmlFor="startDate">Start Date</FieldLabel>
+									<FieldLabel htmlFor="scheduledDate">
+										Scheduled Date
+									</FieldLabel>
 									<Input
-										id="startDate"
+										id="scheduledDate"
 										type="date"
 										value={
 											field.value ? field.value.toISOString().split("T")[0] : ""
@@ -126,21 +138,17 @@ export default function StopEditDialog({
 							)}
 						/>
 						<Controller
-							name="endDate"
-							control={updateStopForm.control}
+							name="scheduledTime"
+							control={updateActivityForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
-									<FieldLabel htmlFor="endDate">End Date</FieldLabel>
+									<FieldLabel htmlFor="scheduledTime">
+										Scheduled Time
+									</FieldLabel>
 									<Input
-										id="endDate"
-										type="date"
-										value={
-											field.value ? field.value.toISOString().split("T")[0] : ""
-										}
-										onChange={(e) => {
-											const value = e.target.value;
-											field.onChange(value ? new Date(value) : null);
-										}}
+										id="scheduledTime"
+										type="time"
+										{...field}
 										aria-invalid={fieldState.invalid}
 										required
 									/>
@@ -151,14 +159,16 @@ export default function StopEditDialog({
 							)}
 						/>
 						<Controller
-							name="orderIndex"
-							control={updateStopForm.control}
+							name="durationMinutes"
+							control={updateActivityForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
-									<FieldLabel htmlFor="orderIndex">Order</FieldLabel>
+									<FieldLabel htmlFor="durationMinutes">
+										Duration (minutes)
+									</FieldLabel>
 									<Input
 										{...field}
-										id="orderIndex"
+										id="durationMinutes"
 										type="number"
 										value={field.value}
 										onChange={(e) => field.onChange(Number(e.target.value))}
@@ -173,7 +183,7 @@ export default function StopEditDialog({
 						/>
 						<Controller
 							name="notes"
-							control={updateStopForm.control}
+							control={updateActivityForm.control}
 							render={({ field, fieldState }) => (
 								<Field aria-invalid={fieldState.invalid}>
 									<FieldLabel htmlFor="notes">Notes</FieldLabel>
@@ -188,11 +198,32 @@ export default function StopEditDialog({
 								</Field>
 							)}
 						/>
+
+						<Controller
+							name="isCompleted"
+							control={updateActivityForm.control}
+							render={({ field, fieldState }) => (
+								<Field aria-invalid={fieldState.invalid}>
+									<div className="flex items-center gap-3">
+										<FieldLabel htmlFor="isCompleted">Completed</FieldLabel>
+										<Checkbox
+											id="isCompleted"
+											checked={field.value}
+											onCheckedChange={(checked) => field.onChange(checked)}
+											aria-invalid={fieldState.invalid}
+										/>
+									</div>
+									{fieldState.invalid && (
+										<FieldError errors={[fieldState.error]} />
+									)}
+								</Field>
+							)}
+						/>
 						<Field>
 							<Button type="submit">
-								<LoadingSwap isLoading={isUpdatingStop}>
+								<LoadingSwap isLoading={isUpdatingActivity}>
 									<span className="flex items-center gap-2">
-										Update Trip Stop
+										Update Activity
 									</span>
 								</LoadingSwap>
 							</Button>

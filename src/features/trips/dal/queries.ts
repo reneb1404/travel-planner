@@ -2,7 +2,9 @@
 
 import { db } from "@/drizzle/db";
 import {
+	Activity,
 	activity,
+	NewActivity,
 	NewStop,
 	NewTrip,
 	stop,
@@ -166,29 +168,6 @@ export async function addNewStop(data: NewStop): Promise<ActionResult<Stop>> {
 	}
 }
 
-export async function deleteStop(
-	tripId: string,
-	stopId: string
-): Promise<ActionResult<void>> {
-	try {
-		const existingStop = await db.query.stop.findFirst({
-			where: (stop, { eq, and }) =>
-				and(eq(stop.id, stopId), eq(stop.tripId, tripId)),
-		});
-
-		if (!existingStop) {
-			return { success: false, error: "Stop not found" };
-		}
-		await db.delete(stop).where(eq(stop.id, stopId));
-
-		revalidatePath("/trips/[id]");
-		return { success: true, data: undefined };
-	} catch (error) {
-		console.error("Failed to delete stop: ", error);
-		return { success: false, error: "Failed to delete stop" };
-	}
-}
-
 export async function updateStop(
 	stopId: string,
 	tripId: string,
@@ -217,5 +196,104 @@ export async function updateStop(
 	} catch (error) {
 		console.error("Failed to update stop: ", error);
 		return { success: false, error: "Failed to update stop" };
+	}
+}
+
+export async function deleteStop(
+	tripId: string,
+	stopId: string
+): Promise<ActionResult<void>> {
+	try {
+		const existingStop = await db.query.stop.findFirst({
+			where: (stop, { eq, and }) =>
+				and(eq(stop.id, stopId), eq(stop.tripId, tripId)),
+		});
+
+		if (!existingStop) {
+			return { success: false, error: "Stop not found" };
+		}
+		await db.delete(stop).where(eq(stop.id, stopId));
+
+		revalidatePath("/trips/[id]");
+		return { success: true, data: undefined };
+	} catch (error) {
+		console.error("Failed to delete stop: ", error);
+		return { success: false, error: "Failed to delete stop" };
+	}
+}
+
+/* Activity Queries */
+
+export async function createNewActivity(
+	data: NewActivity
+): Promise<ActionResult<Activity>> {
+	try {
+		const [newActivity] = await db
+			.insert(activity)
+			.values({ ...data })
+			.returning();
+
+		if (!newActivity) {
+			return { success: false, error: "Failed to add stop" };
+		}
+		revalidatePath("/trips/[id]/");
+		return { success: true, data: newActivity };
+	} catch (error) {
+		console.error("Error adding stop: ", error);
+		return { success: false, error: "Error adding stop" };
+	}
+}
+
+export async function updateActivity(
+	stopId: string,
+	activityId: string,
+	data: Partial<Omit<NewActivity, "stopId" | "id">>
+): Promise<ActionResult<Activity>> {
+	try {
+		const existingStop = await db.query.activity.findFirst({
+			where: (activity, { eq, and }) =>
+				and(eq(activity.id, activityId), eq(activity.stopId, stopId)),
+		});
+
+		if (!existingStop) {
+			return { success: false, error: "Stop not found" };
+		}
+
+		const [updatedActivity] = await db
+			.update(activity)
+			.set({ ...data, updatedAt: new Date() })
+			.where(and(eq(activity.id, activityId), eq(activity.stopId, stopId)))
+			.returning();
+
+		if (!updatedActivity) {
+			return { success: false, error: "Could not update stop" };
+		}
+		return { success: true, data: updatedActivity };
+	} catch (error) {
+		console.error("Failed to update stop: ", error);
+		return { success: false, error: "Failed to update stop" };
+	}
+}
+
+export async function deleteActivity(
+	stopId: string,
+	activityId: string
+): Promise<ActionResult<void>> {
+	try {
+		const existingStop = await db.query.activity.findFirst({
+			where: (activity, { eq, and }) =>
+				and(eq(activity.stopId, stopId), eq(activity.id, activityId)),
+		});
+
+		if (!existingStop) {
+			return { success: false, error: "Stop not found" };
+		}
+		await db.delete(activity).where(eq(activity.id, activityId));
+
+		revalidatePath("/trips/[id]");
+		return { success: true, data: undefined };
+	} catch (error) {
+		console.error("Failed to delete stop: ", error);
+		return { success: false, error: "Failed to delete stop" };
 	}
 }

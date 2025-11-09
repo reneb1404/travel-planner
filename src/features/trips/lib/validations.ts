@@ -21,7 +21,8 @@ export type StopFormData = z.infer<typeof stopSchema>;
 
 export const activitySchema = z.object({
 	name: z.string().min(1, "Stop name is required"),
-	scheduledDate: z.date(),
+	scheduledDate: z.date().nullable(),
+	scheduledTime: z.iso.time(),
 	durationMinutes: z.int(),
 	notes: z.string(),
 	isCompleted: z.boolean(),
